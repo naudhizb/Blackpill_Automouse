@@ -114,6 +114,8 @@ Coordinate_t plotDelta = {0.0f, 0.0f, 0.0f};
 static uint32_t delay 	= 30;
 static float 	amp 	= 2.0f;
 int working_flag = 1;
+int expired_flag = 0;
+const uint32_t expired_tick = 1000*60*60*9; // Approx. 9 Hours
 
 Coordinate_t isometric_projection(Coordinate_t point){
 	Coordinate_t ret = {0.0f, 0.0f, 0.0f};
@@ -312,14 +314,24 @@ int main(void)
 		buffer[x_e] = (int8_t) (plotDelta.x);
 		buffer[y_e] = (int8_t) (plotDelta.y);
 
+		uint32_t curr_tick = HAL_GetTick();
+		if(curr_tick > expired_tick)
+		{
+			expired_flag = 1;
+			working_flag = 0;
+		}
+
 		if(working_flag)
 		{
 			USBD_HID_SendReport(&hUsbDeviceFS, (uint8_t *)buffer, 4);
 		} else {
+			// Just Do Nothing.
+			/*
 			const uint8_t buffer_empty[4] = {0,0,0,0};
 			USBD_HID_SendReport(&hUsbDeviceFS, (uint8_t *)buffer_empty, 4);
-
+			*/
 		}
+
 
 		/* Delay */
 		HAL_Delay(delay);
@@ -329,11 +341,14 @@ int main(void)
 		if(!(i++%(100/delay))){ // about 10Hz
 			static uint8_t blink[20] = {0,1,0,1,1, 1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1};
 			static uint8_t blink_nw[20] = {0,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1};
+			static uint8_t blink_expired[20] = {0,0,0,0,0, 0,0,0,0,0, 1,1,1,1,1, 1,1,1,1,1};
 			static uint8_t cnt = 0;
 
 			if(working_flag)
 			{
 				HAL_GPIO_WritePin(LD0_GPIO_Port, LD0_Pin, blink[cnt]);
+			} else if(expired_flag){
+				HAL_GPIO_WritePin(LD0_GPIO_Port, LD0_Pin, blink_expired[cnt]);
 			} else {
 				HAL_GPIO_WritePin(LD0_GPIO_Port, LD0_Pin, blink_nw[cnt]);
 			}
@@ -631,7 +646,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : B0_Pin */
   GPIO_InitStruct.Pin = B0_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(B0_GPIO_Port, &GPIO_InitStruct);
 
