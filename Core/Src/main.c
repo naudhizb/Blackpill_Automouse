@@ -326,10 +326,10 @@ int main(void)
 			USBD_HID_SendReport(&hUsbDeviceFS, (uint8_t *)buffer, 4);
 		} else {
 			// Just Do Nothing.
-			/*
+
 			const uint8_t buffer_empty[4] = {0,0,0,0};
 			USBD_HID_SendReport(&hUsbDeviceFS, (uint8_t *)buffer_empty, 4);
-			*/
+
 		}
 
 
