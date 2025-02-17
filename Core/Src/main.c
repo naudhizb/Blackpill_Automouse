@@ -114,6 +114,7 @@ Coordinate_t plotDelta = {0.0f, 0.0f, 0.0f};
 static uint32_t delay 	= 30;
 static float 	amp 	= 2.0f;
 int working_flag = 1;
+int detect_flag = 0;
 int expired_flag = 0;
 const uint32_t expired_tick = 1000*60*60*9; // Approx. 9 Hours
 
@@ -232,6 +233,7 @@ int main(void)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
 
+  HAL_GPIO_EXTI_Callback(RADAR_OUT_Pin); // Update first status
 
   uint8_t buffer[4];
   buffer[0]=0;//buttons first 3 bits
@@ -321,7 +323,7 @@ int main(void)
 			working_flag = 0;
 		}
 
-		if(working_flag)
+		if(working_flag | (!detect_flag))
 		{
 			USBD_HID_SendReport(&hUsbDeviceFS, (uint8_t *)buffer, 4);
 		} else {
@@ -341,11 +343,14 @@ int main(void)
 		if(!(i++%(100/delay))){ // about 10Hz
 			static uint8_t blink[20] = {0,1,0,1,1, 1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1};
 			static uint8_t blink_nw[20] = {0,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1};
+			static uint8_t blink_detect[20] = {0,1,0,1,0, 0,0,1,1,1, 1,1,1,1,1, 1,1,1,1,1};
 			static uint8_t blink_expired[20] = {0,0,0,0,0, 0,0,0,0,0, 1,1,1,1,1, 1,1,1,1,1};
 			static uint8_t cnt = 0;
 
-			if(working_flag)
+			if(!detect_flag)
 			{
+				HAL_GPIO_WritePin(LD0_GPIO_Port, LD0_Pin, blink_detect[cnt]);
+			} else if(working_flag){
 				HAL_GPIO_WritePin(LD0_GPIO_Port, LD0_Pin, blink[cnt]);
 			} else if(expired_flag){
 				HAL_GPIO_WritePin(LD0_GPIO_Port, LD0_Pin, blink_expired[cnt]);
@@ -657,9 +662,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : RADAR_OUT_Pin */
+  GPIO_InitStruct.Pin = RADAR_OUT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(RADAR_OUT_GPIO_Port, &GPIO_InitStruct);
+
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 15, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */

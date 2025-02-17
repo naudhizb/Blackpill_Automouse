@@ -68,6 +68,9 @@ void Error_Handler(void);
 #define ADC_CDS_GPIO_Port GPIOA
 #define ADC_GND_Pin GPIO_PIN_3
 #define ADC_GND_GPIO_Port GPIOA
+#define RADAR_OUT_Pin GPIO_PIN_10
+#define RADAR_OUT_GPIO_Port GPIOB
+#define RADAR_OUT_EXTI_IRQn EXTI15_10_IRQn
 
 /* USER CODE BEGIN Private defines */
 

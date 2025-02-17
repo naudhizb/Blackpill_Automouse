@@ -12,6 +12,8 @@
 #include <stdint.h>
 
 extern int working_flag;
+extern int expired_flag;
+extern int detect_flag;
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
@@ -34,11 +36,18 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		  if(button_time > debounce_time)
 		  {
 			  working_flag = !working_flag;
+			  if(working_flag)
+				  expired_flag = 0;
 		  }
 		  else
 		  {
 			  // chattering, ignore
 		  }
 	  }
+  }
+  if(GPIO_Pin == RADAR_OUT_Pin)
+  {
+	  GPIO_PinState B10 = HAL_GPIO_ReadPin(RADAR_OUT_GPIO_Port, RADAR_OUT_Pin);
+	  detect_flag  = !!B10;
   }
 }
